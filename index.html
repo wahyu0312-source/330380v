@@ -11,6 +11,7 @@
     html, body {
       background: #e7e7e7;
       margin: 0; padding: 0;
+      /* pakai font JP supaya metrik baris konsisten */
       font-family: "Yu Gothic UI", "Meiryo", "MS PGothic", Arial, sans-serif;
       font-size: 3.5mm; height: 100%;
     }
@@ -62,16 +63,16 @@
       white-space: normal;
       word-break: normal;
       line-break: strict;
-      text-align: left;
+      text-align: left;         /* lebih enak dibaca untuk kolom teks panjang */
     }
     .inspect-table th:nth-child(3),
-    .inspect-table td:nth-child(3) { text-align: center; } /* kolom 判定 */
+    .inspect-table td:nth-child(3) { text-align: center; } /* kolom 判定 tetap center */
 
     /* Header table: no wrap biar lurus */
     .header-table td, .header-table th { white-space: nowrap; word-break: keep-all; }
     .header-table input { min-width: 0; }
 
-    .button { margin: 3mm 1mm 0 0; padding: 2mm 8mm; font-size: 3.5mm; } /* (nggak dipakai lagi) */
+    .button { margin: 3mm 1mm 0 0; padding: 2mm 8mm; font-size: 3.5mm; }
 
     .td-measure { padding: 0 !important; }
     .td-measure-grid { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 1mm; }
@@ -128,9 +129,11 @@
       }
       table { width: 100%; }
 
+      /* sembunyikan yang tidak perlu & tampilkan mirror */
       .no-print { display: none !important; }
       .print-text { display: inline !important; }
 
+      /* pastikan input tetap tanpa kotak saat print */
       table input,
       table input[type="date"],
       .td-measure-grid input {
@@ -141,6 +144,7 @@
       .signature-box img[src=""] { display: none !important; }
       .stamp-box-row, .signature-box { display: flex !important; }
 
+      /* jaga line-height tabel pemeriksaan saat print */
       .inspect-table th,
       .inspect-table td { line-height: 4.6mm !important; }
 
@@ -155,8 +159,7 @@
     @media print {
       .td-measure-grid input.invalid { background: transparent !important; box-shadow: none !important; }
     }
-
-    /* 判定列の位置ズレ対策 */
+    /* ======= 判定列の位置ズレ対策 ======= */
     .inspect-table .col-judge { width: 15%; }
     .judge-td { padding: 0; }
     .judge-td .judge-select, .judge-td .print-text { display: inline-block; line-height: 1.2; vertical-align: middle; }
@@ -168,7 +171,7 @@
   <!-- Floating toolbar -->
   <div class="toolbar">
     <button type="button" onclick="printViaPDF()">🖨️ 印刷</button>
-    <button type="button" onclick="saveAsPDF()">📄 PDF保存</button>
+    <button type="button" onclick="savePdfToDrive()">📄 PDF保存（Drive直送）</button>
     <button type="button" onclick="clearAllFields()">🧹 全てクリア</button>
   </div>
 
@@ -181,7 +184,7 @@
         <tr>
           <td class="section-label">客先</td>
           <td style="width:20%;">オークマ株式会社</td>
-          <td class="section-label">発行NO.</td>
+          <td class="section-label">発行No.</td>
           <td><input type="text" name="customer_no" placeholder="例: TTS60-01-648" /></td>
           <td class="section-label">発行年月日</td>
           <td>
@@ -197,13 +200,13 @@
         </tr>
         <tr>
           <td class="section-label">品名</td>
-          <td><input type="text" name="product_name" placeholder="例: X軸(左側)シャトルカバー" /></td>
+          <td>X軸(左側)SG</td>
           <td class="section-label">製造日</td>
           <td>
             <input type="date" name="makingdate" class="no-print" />
             <span class="print-text" data-from="makingdate"></span>
           </td>
-          <td class="section-label">製造NO</td>
+          <td class="section-label">製造No</td>
           <td><input type="text" name="serial_no" placeholder="例: XL3303-223" /></td>
         </tr>
         <tr class="order-no-row">
@@ -362,7 +365,10 @@
         <input type="text" name="bikou" style="width:70%;" />
       </div>
 
-      <!-- (Fallback buttons di bawah DIHAPUS) -->
+      <!-- Fallback buttons (opsional) -->
+      <button type="button" class="button no-print" onclick="printViaPDF()">印刷</button>
+      <button type="button" class="button no-print" onclick="saveAsPDF()">PDF保存</button>
+      <button type="button" class="button no-print" id="clearAllBtn">全クリア</button>
 
       <!-- COMPANY & STAMPS -->
       <div class="company-name">東京精密発條株式会社</div>
@@ -398,6 +404,11 @@
   </form>
 
   <script>
+    /* === KONFIG (sudah diisi) === */
+    const GAS_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbyzbU-_Q7NjalY5wHOgA5KZTrAZBNC7VXE24e2VoYMkvlBG_7gpx532bt59l79MP5-SqQ/exec';
+    const DRIVE_FOLDER_ID = '1Otvs6p1g9stLY9St3EDCNF2pAYwxViFr'; // ID folder
+    const GAS_API_KEY = ''; // opsional; samakan dgn API_KEY di Code.gs kalau dipakai
+
     function updateStampPreview(id, src) { document.getElementById(id).src = src || ''; }
     function clearAllFields() {
       const form = document.getElementById('inspection-form');
@@ -407,27 +418,22 @@
       wireJudgeMirror();
       wireDateMirror();
     }
-    document.getElementById('clearAllBtn')?.addEventListener('click', clearAllFields); // (nggak ada tombol bawah—aman)
+    document.getElementById('clearAllBtn')?.addEventListener('click', clearAllFields);
 
     // ===== Validasi "測定値" =====
     (function wireMeasureValidation() {
       const fields = document.querySelectorAll('.td-measure-grid input');
-
       fields.forEach(inp => {
         const allowDecimal = (inp.getAttribute('step') || '').includes('.');
         const reInt = /^\d{0,3}$/;
         const reDec = /^\d{0,3}(\.\d{0,1})?$/;
-
         const getMin = () => parseFloat(inp.dataset.min ?? '-Infinity');
         const getMax = () => parseFloat(inp.dataset.max ?? 'Infinity');
 
         inp.addEventListener('input', () => {
-          let v = inp.value;
-          v = v.replace(/[^\d.]/g, '');
+          let v = inp.value.replace(/[^\d.]/g, '');
           const firstDot = v.indexOf('.');
-          if (firstDot !== -1) {
-            v = v.slice(0, firstDot + 1) + v.slice(firstDot + 1).replace(/\./g, '');
-          }
+          if (firstDot !== -1) v = v.slice(0, firstDot + 1) + v.slice(firstDot + 1).replace(/\./g, '');
           if (v.includes('.')) {
             const [d, f] = v.split('.');
             const dTrim = d.slice(0, 3);
@@ -437,7 +443,7 @@
             v = v.slice(0, 3);
           }
           const ok = allowDecimal ? reDec.test(v) : reInt.test(v);
-          if (!ok) { v = (v.match(/^\d{0,3}/)?.[0]) ?? ''; }
+          if (!ok) v = (v.match(/^\d{0,3}/)?.[0]) ?? '';
           inp.value = v;
           inp.classList.remove('invalid');
         });
@@ -445,16 +451,13 @@
         inp.addEventListener('blur', () => {
           const v = inp.value;
           if (v === '') { inp.classList.remove('invalid'); return; }
-          const n = parseFloat(v);
-          const min = getMin(); const max = getMax();
-          const inRange = !Number.isNaN(n) &&
-                          n >= (Number.isFinite(min) ? min : -Infinity) &&
-                          n <= (Number.isFinite(max) ? max : Infinity);
+          const n = parseFloat(v), min = getMin(), max = getMax();
+          const inRange = !Number.isNaN(n) && n >= (Number.isFinite(min) ? min : -Infinity) && n <= (Number.isFinite(max) ? max : Infinity);
           if (!inRange) {
             inp.value = '';
             inp.classList.add('invalid');
           } else {
-            if (allowDecimal) { inp.value = n.toFixed(1).replace(/\.0$/, '.0'); }
+            if (allowDecimal) inp.value = n.toFixed(1).replace(/\.0$/, '.0');
             inp.classList.remove('invalid');
           }
         });
@@ -472,7 +475,7 @@
       });
     }
 
-    // Mirror select 判定
+    // Mirror hanya untuk select 判定 (judge)
     function wireJudgeMirror(){
       document.querySelectorAll('select.judge-select').forEach(sel => {
         if (!sel.nextElementSibling || !sel.nextElementSibling.classList.contains('print-text')) {
@@ -494,7 +497,7 @@
         scale: 2,
         backgroundColor: '#FFFFFF',
         useCORS: true,
-        letterRendering: true,
+        letterRendering: true,   // penting untuk kestabilan glyph
         onclone: (doc) => {
           doc.querySelectorAll('.no-print').forEach(e => e.style.display = 'none');
           doc.querySelectorAll('.print-text').forEach(e => e.style.display = 'inline');
@@ -502,17 +505,79 @@
       });
     }
 
+    // Bangun PDF blob + nama file (ikut 製造日 bila ada)
+    async function buildPdfBlobAndName() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ orientation:'portrait', unit:'mm', format:'b5' });
+      const canvas = await renderFormCanvas();
+      doc.addImage(canvas.toDataURL('image/png'), 'PNG', 7, 7, 162, 236);
+      const makingDate = document.querySelector('input[name="makingdate"]').value;
+      const ymd = makingDate
+        ? makingDate.replace(/-/g,'')
+        : (()=>{
+            const t=new Date();
+            return t.getFullYear()+String(t.getMonth()+1).padStart(2,'0')+String(t.getDate()).padStart(2,'0');
+          })();
+      const inputter = (document.querySelector('select[name="inputter"]')?.value || 'no-name').replace(/[\\/:*?"<>|]/g,'');
+      const orderNo  = (document.querySelector('input[name="order_no"]').value || 'no-order').replace(/[\\/:*?"<>|]/g,'');
+      const serialNo = (document.querySelector('input[name="serial_no"]').value || 'no-serial').replace(/[\\/:*?"<>|]/g,'');
+      const filename = `${ymd}_${inputter}_${orderNo}_${serialNo}.pdf`;
+      const blob = doc.output('blob');
+      return { blob, filename, meta: { inputter, orderNo, serialNo } };
+    }
+
+    // Kirim PDF ke Google Drive via Apps Script Web App (auto folder YYYY/MM di server)
+    async function savePdfToDrive(){
+      if (!GAS_WEBAPP_URL || !DRIVE_FOLDER_ID) {
+        alert('Drive belum dikonfigurasi: set GAS_WEBAPP_URL & DRIVE_FOLDER_ID (ID folder, bukan URL)');
+        return;
+      }
+      try {
+        const { blob, filename, meta } = await buildPdfBlobAndName();
+        const makingDate = document.querySelector('input[name="makingdate"]')?.value || '';
+        // Blob -> base64 (dataURL) untuk dikirim ke GAS
+        const ab = await blob.arrayBuffer();
+        let bin = ''; const bytes = new Uint8Array(ab);
+        for (let i=0; i<bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+        const base64 = btoa(bin);
+        const payload = {
+          folderId: DRIVE_FOLDER_ID,
+          filename,
+          dataUrl: `data:application/pdf;base64,${base64}`,
+          makingDate,   // GAS pakai utk subfolder YYYY/MM
+          meta,
+          apiKey: GAS_API_KEY || undefined
+        };
+        const res = await fetch(GAS_WEBAPP_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain' }, // text/plain → hindari preflight CORS
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json().catch(()=>({ ok:false }));
+        if (!res.ok || !data.ok) throw new Error(data.error || 'Upload failed');
+        alert(`✅ Tersimpan ke Drive → ${data.path || ''}\n` + (data.url || ''));
+      } catch(e){
+        alert('❌ Drive保存 gagal: ' + e.message);
+      }
+    }
+
+    // Fallback: simpan lokal
     async function saveAsPDF() {
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF({ orientation:'portrait', unit:'mm', format:'b5' });
       const canvas = await renderFormCanvas();
       doc.addImage(canvas.toDataURL('image/png'), 'PNG', 7, 7, 162, 236);
       const makingDate = document.querySelector('input[name="makingdate"]').value;
-      const ymd = makingDate ? makingDate.replace(/-/g,'') : ( ()=>{ const t=new Date(); return t.getFullYear()+String(t.getMonth()+1).padStart(2,'0')+String(t.getDate()).padStart(2,'0'); } )();
+      const ymd = makingDate ? makingDate.replace(/-/g,'')
+        : (()=>{
+            const t=new Date();
+            return t.getFullYear()+String(t.getMonth()+1).padStart(2,'0')+String(t.getDate()).padStart(2,'0');
+          })();
       const inputter = (document.querySelector('select[name="inputter"]')?.value || 'no-name').replace(/[\\/:*?"<>|]/g,'');
       const orderNo = (document.querySelector('input[name="order_no"]').value || 'no-order').replace(/[\\/:*?"<>|]/g,'');
       const serialNo = (document.querySelector('input[name="serial_no"]').value || 'no-serial').replace(/[\\/:*?"<>|]/g,'');
-      doc.save(`${ymd}_${inputter}_${orderNo}_${serialNo}.pdf`);
+      const fn = `${ymd}_${inputter}_${orderNo}_${serialNo}.pdf`;
+      doc.save(fn);
     }
 
     // Print via PDF tanpa header/footer browser
