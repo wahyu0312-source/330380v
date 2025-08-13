@@ -11,14 +11,17 @@
     html, body {
       background: #e7e7e7;
       margin: 0; padding: 0;
-      font-family: Arial, sans-serif;
+      font-family: "Yu Gothic UI", "Meiryo", "MS PGothic", Arial, sans-serif;
       font-size: 3.5mm; height: 100%;
     }
     .no-print { display: initial; }
     .print-text { display: none; }
 
     /* Konsistensi font (termasuk tanggal) */
-    input, select { font-size: 3.5mm; padding: .5mm; box-sizing: border-box; font-family: Arial, sans-serif; }
+    input, select {
+      font-size: 3.5mm; padding: .5mm; box-sizing: border-box;
+      font-family: "Yu Gothic UI", "Meiryo", "MS PGothic", Arial, sans-serif;
+    }
     input[type="date"] { font-family: inherit; -webkit-appearance: none; appearance: none; line-height: 1.2; }
 
     /* Hilangkan kotak (border) dari semua input di tabel */
@@ -52,11 +55,23 @@
     th { background: #f0f0f0; }
     .section-label { text-align: left; font-weight: bold; background: #f9f9f9; }
 
+    /* === CJK text safety — KHUSUS tabel pemeriksaan (anti overlap) === */
+    .inspect-table th,
+    .inspect-table td {
+      line-height: 4.6mm;      /* absolut -> stabil (3.5mm font × ~1.31) */
+      white-space: normal;
+      word-break: normal;
+      line-break: strict;
+      text-align: left;
+    }
+    .inspect-table th:nth-child(3),
+    .inspect-table td:nth-child(3) { text-align: center; } /* kolom 判定 */
+
     /* Header table: no wrap biar lurus */
     .header-table td, .header-table th { white-space: nowrap; word-break: keep-all; }
     .header-table input { min-width: 0; }
 
-    .button { margin: 3mm 1mm 0 0; padding: 2mm 8mm; font-size: 3.5mm; }
+    .button { margin: 3mm 1mm 0 0; padding: 2mm 8mm; font-size: 3.5mm; } /* (nggak dipakai lagi) */
 
     .td-measure { padding: 0 !important; }
     .td-measure-grid { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 1mm; }
@@ -90,7 +105,7 @@
       z-index: 9999; backdrop-filter: blur(4px);
     }
     .toolbar button {
-      font-family: Arial, sans-serif; font-size: 14px;
+      font-family: "Yu Gothic UI", "Meiryo", "MS PGothic", Arial, sans-serif; font-size: 14px;
       padding: 8px 14px; border-radius: 8px;
       border: 1px solid #ccc; background: #fff; cursor: pointer;
     }
@@ -113,11 +128,9 @@
       }
       table { width: 100%; }
 
-      /* sembunyikan yang tidak perlu & tampilkan mirror */
       .no-print { display: none !important; }
       .print-text { display: inline !important; }
 
-      /* pastikan input tetap tanpa kotak saat print */
       table input,
       table input[type="date"],
       .td-measure-grid input {
@@ -127,6 +140,9 @@
 
       .signature-box img[src=""] { display: none !important; }
       .stamp-box-row, .signature-box { display: flex !important; }
+
+      .inspect-table th,
+      .inspect-table td { line-height: 4.6mm !important; }
 
       * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     }
@@ -139,9 +155,9 @@
     @media print {
       .td-measure-grid input.invalid { background: transparent !important; box-shadow: none !important; }
     }
-    /* ======= 判定列の位置ズレ対策 ======= */
+
+    /* 判定列の位置ズレ対策 */
     .inspect-table .col-judge { width: 15%; }
-    .inspect-table th:nth-child(3), .inspect-table td:nth-child(3) { text-align: center; }
     .judge-td { padding: 0; }
     .judge-td .judge-select, .judge-td .print-text { display: inline-block; line-height: 1.2; vertical-align: middle; }
     .judge-td .print-text { min-width: 8mm; text-align: center; }
@@ -276,7 +292,6 @@
           <td>435 mm以下</td>
           <td class="td-measure">
             <div class="td-measure-grid">
-              <!-- integer: max 3 digit -->
               <input type="text" inputmode="numeric" name="a_length" placeholder="0-435" data-min="0" data-max="435" />
               <span>mm</span>
             </div>
@@ -287,7 +302,6 @@
           <td>2,065 mm以上</td>
           <td class="td-measure">
             <div class="td-measure-grid">
-              <!-- integer: min 2065 -->
               <input type="text" inputmode="numeric" name="b_length" placeholder=">=2065" data-min="2065" />
               <span>mm</span>
             </div>
@@ -298,7 +312,6 @@
           <td>1,630 mm以上</td>
           <td class="td-measure">
             <div class="td-measure-grid">
-              <!-- integer: min 1630 -->
               <input type="text" inputmode="numeric" name="c_length" placeholder=">=1630" data-min="1630" />
               <span>mm</span>
             </div>
@@ -309,7 +322,6 @@
           <td>7.0 kg以下</td>
           <td class="td-measure">
             <div class="td-measure-grid">
-              <!-- decimal allowed: 1 place -->
               <input type="text" inputmode="decimal" step="0.1" name="start_resist" placeholder="0-7.0" data-min="0" data-max="7" />
               <span>kg</span>
             </div>
@@ -350,16 +362,12 @@
         <input type="text" name="bikou" style="width:70%;" />
       </div>
 
-      <!-- Fallback buttons (hidden on screen) -->
-      <button type="button" class="button no-print" onclick="printViaPDF()">印刷</button>
-      <button type="button" class="button no-print" onclick="saveAsPDF()">PDF保存</button>
-      <button type="button" class="button no-print" id="clearAllBtn">全クリア</button>
+      <!-- (Fallback buttons di bawah DIHAPUS) -->
 
       <!-- COMPANY & STAMPS -->
       <div class="company-name">東京精密発條株式会社</div>
       <div class="stamp-box-row">
         <div>
-          <!-- dropdown stempel: TIDAK dimirror -->
           <select class="no-print" onchange="updateStampPreview('stamp1',this.value)">
             <option value="">- 印鑑選択 -</option>
             <option value="nakagawa.png">中川部長</option>
@@ -395,20 +403,13 @@
       const form = document.getElementById('inspection-form');
       form.reset();
       ['stamp1','stamp2'].forEach(id => document.getElementById(id).src = '');
-      // bersihkan highlight invalid
       form.querySelectorAll('.td-measure-grid input.invalid').forEach(el => el.classList.remove('invalid'));
-      // refresh mirror select
       wireJudgeMirror();
-      // refresh mirror date
       wireDateMirror();
     }
-    document.getElementById('clearAllBtn')?.addEventListener('click', clearAllFields);
+    document.getElementById('clearAllBtn')?.addEventListener('click', clearAllFields); // (nggak ada tombol bawah—aman)
 
     // ===== Validasi "測定値" =====
-    // - Maks 3 digit sebelum titik.
-    // - Jika step mengandung ".", izinkan 1 digit desimal.
-    // - Cek min/max via data-min / data-max.
-    // - Out-of-range saat blur -> kosongkan & tandai merah.
     (function wireMeasureValidation() {
       const fields = document.querySelectorAll('.td-measure-grid input');
 
@@ -422,17 +423,11 @@
 
         inp.addEventListener('input', () => {
           let v = inp.value;
-
-          // Hanya angka dan titik
           v = v.replace(/[^\d.]/g, '');
-
-          // Hapus titik ganda
           const firstDot = v.indexOf('.');
           if (firstDot !== -1) {
             v = v.slice(0, firstDot + 1) + v.slice(firstDot + 1).replace(/\./g, '');
           }
-
-          // Batasi 3 digit sebelum titik + 1 desimal jika diizinkan
           if (v.includes('.')) {
             const [d, f] = v.split('.');
             const dTrim = d.slice(0, 3);
@@ -441,38 +436,25 @@
           } else {
             v = v.slice(0, 3);
           }
-
-          // Terapkan regex
           const ok = allowDecimal ? reDec.test(v) : reInt.test(v);
-          if (!ok) {
-            v = (v.match(/^\d{0,3}/)?.[0]) ?? '';
-          }
-
+          if (!ok) { v = (v.match(/^\d{0,3}/)?.[0]) ?? ''; }
           inp.value = v;
-          inp.classList.remove('invalid'); // hilangkan merah saat sedang diketik
+          inp.classList.remove('invalid');
         });
 
         inp.addEventListener('blur', () => {
           const v = inp.value;
           if (v === '') { inp.classList.remove('invalid'); return; }
-
           const n = parseFloat(v);
-          const min = getMin();
-          const max = getMax();
-
-          const inRange =
-            !Number.isNaN(n) &&
-            n >= (Number.isFinite(min) ? min : -Infinity) &&
-            n <= (Number.isFinite(max) ? max : Infinity);
-
+          const min = getMin(); const max = getMax();
+          const inRange = !Number.isNaN(n) &&
+                          n >= (Number.isFinite(min) ? min : -Infinity) &&
+                          n <= (Number.isFinite(max) ? max : Infinity);
           if (!inRange) {
-            inp.value = '';             // kosongkan
-            inp.classList.add('invalid'); // tandai merah
+            inp.value = '';
+            inp.classList.add('invalid');
           } else {
-            if (allowDecimal) {
-              // Normalisasi tampilan ke 1 desimal
-              inp.value = n.toFixed(1).replace(/\.0$/, '.0');
-            }
+            if (allowDecimal) { inp.value = n.toFixed(1).replace(/\.0$/, '.0'); }
             inp.classList.remove('invalid');
           }
         });
@@ -490,7 +472,7 @@
       });
     }
 
-    // Mirror hanya untuk select 判定 (judge)
+    // Mirror select 判定
     function wireJudgeMirror(){
       document.querySelectorAll('select.judge-select').forEach(sel => {
         if (!sel.nextElementSibling || !sel.nextElementSibling.classList.contains('print-text')) {
@@ -499,20 +481,20 @@
           sel.parentNode.insertBefore(span, sel.nextSibling);
         }
         const span = sel.nextElementSibling;
-        // tandai sel td untuk styling khusus判定列
         sel.closest('td')?.classList.add('judge-td');
         const upd = () => span.textContent = sel.value;
         sel.addEventListener('change', upd); upd();
       });
     }
 
-    // Render canvas untuk PDF: tampilkan mirror & sembunyikan elemen no-print
+    // Render canvas untuk PDF
     async function renderFormCanvas() {
       const el = document.querySelector('.b5-preview');
       return html2canvas(el, {
         scale: 2,
         backgroundColor: '#FFFFFF',
         useCORS: true,
+        letterRendering: true,
         onclone: (doc) => {
           doc.querySelectorAll('.no-print').forEach(e => e.style.display = 'none');
           doc.querySelectorAll('.print-text').forEach(e => e.style.display = 'inline');
@@ -524,7 +506,6 @@
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF({ orientation:'portrait', unit:'mm', format:'b5' });
       const canvas = await renderFormCanvas();
-      // Fit 1 halaman B5: inset 7mm -> 162 × 236 mm
       doc.addImage(canvas.toDataURL('image/png'), 'PNG', 7, 7, 162, 236);
       const makingDate = document.querySelector('input[name="makingdate"]').value;
       const ymd = makingDate ? makingDate.replace(/-/g,'') : ( ()=>{ const t=new Date(); return t.getFullYear()+String(t.getMonth()+1).padStart(2,'0')+String(t.getDate()).padStart(2,'0'); } )();
