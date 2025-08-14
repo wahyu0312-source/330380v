@@ -84,9 +84,33 @@
           <option value="ユスフ">ユスフ</option>
         </select>
       </div>
-
-      <!-- (tabel pemeriksaan & measurement sama seperti sebelumnya) -->
-      <!-- ……………………… (biarkan sesuai versi kamu) ……………………… -->
+     <table>
+        <tr><th>項目</th><th>基準値</th><th>測定値</th></tr>
+        <tr><td>収縮時長さ(a)</td><td>435 mm以下</td>
+          <td class="td-measure"><div class="td-measure-grid">
+            <input type="text" inputmode="numeric" name="a_length" placeholder="0-435" data-min="0" data-max="435"/><span>mm</span>
+          </div></td></tr>
+        <tr><td>伸長時長さ(b)</td><td>2,065 mm以上</td>
+          <td class="td-measure"><div class="td-measure-grid">
+            <input type="text" inputmode="numeric" name="b_length" placeholder=">=2065" data-min="2065"/><span>mm</span>
+          </div></td></tr>
+        <tr><td>カバーストローク(s)</td><td>1,630 mm以上</td>
+          <td class="td-measure"><div class="td-measure-grid">
+            <input type="text" inputmode="numeric" name="c_length" placeholder=">=1630" data-min="1630"/><span>mm</span>
+          </div></td></tr>
+        <tr><td>初期摺動抵抗</td><td>7.0 kg以下</td>
+          <td class="td-measure"><div class="td-measure-grid">
+            <input type="text" inputmode="decimal" step="0.1" name="start_resist" placeholder="0-7.0" data-min="0" data-max="7"/><span>kg</span>
+          </div></td></tr>
+        <tr><td>中期摺動抵抗</td><td>7.0 kg以下</td>
+          <td class="td-measure"><div class="td-measure-grid">
+            <input type="text" inputmode="decimal" step="0.1" name="mid_resist" placeholder="0-7.0" data-min="0" data-max="7"/><span>kg</span>
+          </div></td></tr>
+        <tr><td>終期摺動抵抗</td><td>7.0 kg以下</td>
+          <td class="td-measure"><div class="td-measure-grid">
+            <input type="text" inputmode="decimal" step="0.1" name="end_resist" placeholder="0-7.0" data-min="0" data-max="7"/><span>kg</span>
+          </div></td></tr>
+      </table>
 
       <div style="margin:2mm 0;">
         <label style="font-weight:bold;">総合判定</label>
@@ -100,10 +124,28 @@
       <button type="button" class="button no-print" id="clearAllBtn">全クリア</button>
 
       <div class="company-name">東京精密発條株式会社</div>
-      <!-- (stamp picker sama seperti sebelumnya) -->
+      <div class="stamp-box-row">
+        <div>
+          <select class="no-print" onchange="updateStampPreview('stamp1',this.value)">
+            <option value="">- 印鑑選択 -</option>
+            <option value="nakagawa.png">中川部長</option><option value="hasebe.png">長谷部</option>
+            <option value="ishibashi.png">石橋</option><option value="togo.png">都合</option>
+            <option value="wahyu.png">ワーユ</option><option value="yusuf.png">ユスフ</option>
+          </select>
+          <div class="stamp-label">検印</div><div class="signature-box"><img id="stamp1" src="" alt=""></div>
+        </div>
+        <div>
+          <select class="no-print" onchange="updateStampPreview('stamp2',this.value)">
+            <option value="">- 印鑑選択 -</option>
+            <option value="nakagawa.png">中川部長</option><option value="hasebe.png">長谷部</option>
+            <option value="ishibashi.png">石橋</option><option value="togo.png">都合</option>
+            <option value="wahyu.png">ワーユ</option><option value="yusuf.png">ユスフ</option>
+          </select>
+          <div class="stamp-label">検査印</div><div class="signature-box"><img id="stamp2" src="" alt=""></div>
+        </div>
+      </div>
     </div>
   </form>
-
   <script>
     /* ===== KONFIG — PASTE Content URL DI SINI ===== */
     const GAS_WEBAPP_URL = 'https://script.googleusercontent.com/macros/echo?user_content_key=AehSKLgkwBm_n74jSo0yh0oGMeLqY35pVmP52_--_-_xmN35zBz7FKsQYfm9c3SEnJojs-s33VA9B5NlAODoWX_gsUo4Z93jD_c7MAkd8DgXI6j73wkKNUUNXm88BlQ5qnb97Gtt_Zdfcj9g3kaKW6ixBkGVh1NQdXqF_vhVdGv72COdiJbVR7zVvyhiVhLN8QFuash0q04iegaaZNyAQbOGjYQ-u5UnP1kQXNhlAYS5H0LLQHlb6oSox4howhy9dgFex9OE8I-ZgTb7tBwb-2lTSmaKZvKpzG08z3h7gY38&lib=MOX3jNDQOVqzRQefDla-VHsUn87JT-eJS';
@@ -233,3 +275,4 @@
   </script>
 </body>
 </html>
+
