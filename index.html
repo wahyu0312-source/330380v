@@ -84,6 +84,24 @@
           <option value="ユスフ">ユスフ</option>
         </select>
       </div>
+      <table class="inspect-table">
+        <colgroup><col style="width:38%"><col style="width:47%"><col class="col-judge" style="width:15%"></colgroup>
+        <tr><th>検査項目</th><th>規格</th><th>判定</th></tr>
+        <tr><td>本体取付け寸法</td><td>寸法測定検査</td>
+            <td><select name="judge1" class="no-print judge-select"><option>合</option><option>否</option></select><span class="print-text"></span></td></tr>
+        <tr><td>摺動テスト</td><td>摺動テスト台走り・機能確認</td>
+            <td><select name="judge2" class="no-print judge-select"><option>合</option><option>否</option></select><span class="print-text"></span></td></tr>
+        <tr><td>摺動時の異音</td><td>摺動テスト台走り時異音の有無確認</td>
+            <td><select name="judge3" class="no-print judge-select"><option>無</option><option>有</option></select><span class="print-text"></span></td></tr>
+        <tr><td>外観検査</td><td>キズ・バリの有無確認</td>
+            <td><select name="judge4" class="no-print judge-select"><option>合</option><option>否</option></select><span class="print-text"></span></td></tr>
+        <tr><td>カバーワイパーの隙間</td><td>ワイパー材 t=0.05にて確認</td>
+            <td><select name="judge5" class="no-print judge-select"><option>合</option><option>否</option></select><span class="print-text"></span></td></tr>
+        <tr><td>※不具合発生に付きワイパー長短確認</td><td>山形部（長）/側面部（短）各ワイパーを一本引抜長さ確認後　再挿入</td>
+            <td><select name="judge6" class="no-print judge-select"><option>合</option><option>否</option></select><span class="print-text"></span></td></tr>
+        <tr><td>*M8 ナット取付</td><td>カバー裏面9ヶ所・M8ナット溶接確認</td>
+            <td><select name="judge7" class="no-print judge-select"><option>合</option><option>否</option></select><span class="print-text"></span></td></tr>
+      </table>
      <table>
         <tr><th>項目</th><th>基準値</th><th>測定値</th></tr>
         <tr><td>収縮時長さ(a)</td><td>435 mm以下</td>
@@ -275,4 +293,5 @@
   </script>
 </body>
 </html>
+
 
