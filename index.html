@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!DOCTYPE html> 
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
@@ -200,7 +200,7 @@
         </tr>
         <tr>
           <td class="section-label">品名</td>
-          <td>oX軸(左側)SG</td>
+          <td>X軸(左側)SG</td>
           <td class="section-label">製造日</td>
           <td>
             <input type="date" name="makingdate" class="no-print" />
@@ -366,9 +366,9 @@
       </div>
 
       <!-- Fallback buttons (hidden on screen) -->
-      <button type="button" class="button no-print" onclick="printViaPDF()">印刷</button>
+      <!--<button type="button" class="button no-print" onclick="printViaPDF()">印刷</button>
       <button type="button" class="button no-print" onclick="saveAsPDF()">PDF保存</button>
-      <button type="button" class="button no-print" id="clearAllBtn">全クリア</button>
+      <button type="button" class="button no-print" id="clearAllBtn">全クリア</button>-->
 
       <!-- COMPANY & STAMPS -->
       <div class="company-name">東京精密発條株式会社</div>
@@ -522,17 +522,34 @@
       });
     }
 
+    // ====== MODIFIKASI: filename menambahkan Customer & 図番 ======
     async function saveAsPDF() {
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF({ orientation:'portrait', unit:'mm', format:'b5' });
       const canvas = await renderFormCanvas();
       doc.addImage(canvas.toDataURL('image/png'), 'PNG', 7, 7, 162, 236);
+
+      // Tanggal untuk prefix
       const makingDate = document.querySelector('input[name="makingdate"]').value;
-      const ymd = makingDate ? makingDate.replace(/-/g,'') : ( ()=>{ const t=new Date(); return t.getFullYear()+String(t.getMonth()+1).padStart(2,'0')+String(t.getDate()).padStart(2,'0'); } )();
-      const inputter = (document.querySelector('select[name="inputter"]')?.value || 'no-name').replace(/[\\/:*?"<>|]/g,'');
-      const orderNo = (document.querySelector('input[name="order_no"]').value || 'no-order').replace(/[\\/:*?"<>|]/g,'');
-      const serialNo = (document.querySelector('input[name="serial_no"]').value || 'no-serial').replace(/[\\/:*?"<>|]/g,'');
-      doc.save(`${ymd}_${inputter}_${orderNo}_${serialNo}.pdf`);
+      const ymd = makingDate
+        ? makingDate.replace(/-/g,'')
+        : (()=>{
+            const t=new Date();
+            return t.getFullYear()+String(t.getMonth()+1).padStart(2,'0')+String(t.getDate()).padStart(2,'0');
+          })();
+
+      // Ambil Customer (td baris 1 kolom 2) dan 図番 (td baris 2 kolom 6)
+      const sanitize = s => s.replace(/[\\/:*?"<>|]/g,'').trim();
+      const customer = sanitize(document.querySelector('.header-table tr:nth-child(1) td:nth-child(2)')?.textContent || 'no-customer');
+      const zuban    = sanitize(document.querySelector('.header-table tr:nth-child(2) td:nth-child(6)')?.textContent || 'no-zuban');
+
+      // Field lain seperti sebelumnya (opsional di filename)
+      const inputter = sanitize(document.querySelector('select[name="inputter"]')?.value || 'no-name');
+      const orderNo  = sanitize(document.querySelector('input[name="order_no"]')?.value || 'no-order');
+      const serialNo = sanitize(document.querySelector('input[name="serial_no"]')?.value || 'no-serial');
+
+      // Simpan PDF dengan format: YYYYMMDD_Customer_図番_Inputter_Order_Serial.pdf
+      doc.save(`${ymd}_${customer}_${zuban}_${inputter}_${orderNo}_${serialNo}.pdf`);
     }
 
     // Print via PDF tanpa header/footer browser
