@@ -131,6 +131,11 @@
     .judge-td .judge-select, .judge-td .print-text { display: inline-block; line-height: 1.2; vertical-align: middle; }
     .judge-td .print-text { min-width: 8mm; text-align: center; }
     @media print { .judge-td .print-text { display: inline-block !important; } }
+     /* Tengah untuk header + baris pertama data */
+.inspect-table tr:nth-child(-n+1) th,
+.inspect-table tr:nth-child(-n+1) td {
+  text-align: center !important;
+}
   </style>
 </head>
 <body>
@@ -564,3 +569,4 @@
   </script>
 </body>
 </html>
+
