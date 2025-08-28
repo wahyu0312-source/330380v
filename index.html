@@ -138,7 +138,8 @@
           <td class="section-label">品名</td><td>X軸(左側)SG</td>
           <td class="section-label">製造日</td>
           <td>
-            <input type="date" name="makingdate" class="no-print soft-required" data-soft-required="1" />
+            <!-- Making date: text YYYY/MM/DD -->
+            <input type="text" name="makingdate" placeholder="YYYY/MM/DD" class="no-print soft-required" data-soft-required="1" />
             <span class="print-text" data-from="makingdate"></span>
           </td>
           <td class="section-label">製造No</td>
@@ -272,7 +273,9 @@
       wireDateMirror(); wireEnterNavigationAll(); wireSerialMirror();
       wireSoftRequired(); markSoftRequired();
       setIssuedTodayIfEmpty(); updateOverallJudgment();
-      wireHakkohidukeText(); // mirror lagi setelah reset
+      // mirror tanggal teks
+      wireYMDText('hakkohiduke');
+      wireYMDText('makingdate');
     }
 
     /* ==== VALIDASI MEASURE ==== */
@@ -296,7 +299,10 @@
           if(allowDec && /\.$/.test(v)) v=v.replace(/\.$/,'.0');
           const n=parseFloat(v), min=parseFloat(inp.dataset.min ?? '-Infinity'), max=parseFloat(inp.dataset.max ?? 'Infinity');
           const ok=!Number.isNaN(n)&&n>=(Number.isFinite(min)?min:-Infinity)&&n<=(Number.isFinite(max)?max:Infinity);
-          if(!ok){ inp.value=''; inp.classList.add('invalid'); markSoftRequired(); return; }
+          if(!ok){
+            // JANGAN kosongkan nilai; tandai invalid → 総合判定 = 否
+            inp.classList.add('invalid'); markSoftRequired(); return;
+          }
           inp.value = allowDec ? n.toFixed(1).replace(/\.0$/,'.0') : String(Math.trunc(n)).slice(0,MAX_INT_DIGITS);
           inp.classList.remove('invalid'); markSoftRequired();
         });
@@ -314,11 +320,11 @@
       });
     }
 
-    /* ==== MIRROR TANGGAL & 判定 ==== */
+    /* ==== MIRROR TANGGAL (date input) & 判定 ==== */
     function wireDateMirror(){
       document.querySelectorAll('input[type="date"]').forEach(inp=>{
         const span=document.querySelector(`.print-text[data-from="${inp.name}"]`); if(!span) return;
-        const fmt=v=>v?v.replace(/(\d{4})-(\d{2})-(\d{2})/,'$1/$2/$3'):'';
+        const fmt=v=>v?v.replace(/(\d{4})-(\d{2})-(\d{2})/,'$1/$2/$3'):''; // y-m-d → y/m/d
         const upd=()=>span.textContent=fmt(inp.value);
         inp.addEventListener('change',()=>{ upd(); markSoftRequired(); }); upd();
       });
@@ -334,7 +340,7 @@
       });
     }
 
-    /* ==== 発行年月日: text YYYY/MM/DD ==== */
+    /* ==== 発行年月日 (text) ==== */
     function formatYMD(d){
       const yyyy=d.getFullYear(), mm=String(d.getMonth()+1).padStart(2,'0'), dd=String(d.getDate()).padStart(2,'0');
       return `${yyyy}/${mm}/${dd}`;
@@ -346,13 +352,14 @@
       if(mo<1||mo>12||d<1||d>31) return null;
       return `${String(y).padStart(4,'0')}/${String(mo).padStart(2,'0')}/${String(d).padStart(2,'0')}`;
     }
-    function wireHakkohidukeText(){
-      const inp=document.querySelector('input[name="hakkohiduke"]');
-      const span=document.querySelector('.print-text[data-from="hakkohiduke"]');
+    // Generic binder utk input tanggal teks "YYYY/MM/DD"
+    function wireYMDText(name){
+      const inp  = document.querySelector(`input[name="${name}"]`);
+      const span = document.querySelector(`.print-text[data-from="${name}"]`);
       if(!inp) return;
-      const sync=()=>{ 
-        const norm=validYMDText(inp.value);
-        if(norm && inp.value!==norm) inp.value=norm;
+      const sync=()=>{
+        const norm = validYMDText(inp.value);
+        if(norm && inp.value !== norm) inp.value = norm;
         if(span) span.textContent = inp.value || '';
         markSoftRequired();
       };
@@ -433,7 +440,7 @@
     function nowHHMM(){ const t=new Date(); return String(t.getHours()).padStart(2,'0')+String(t.getMinutes()).padStart(2,'0'); }
     function computeFilename(){
       const md=document.querySelector('input[name="makingdate"]').value;
-      const ymd = md ? md.replace(/-/g,'') : (()=>{const t=new Date(); return t.getFullYear()+String(t.getMonth()+1).padStart(2,'0')+String(t.getDate()).padStart(2,'0');})();
+      const ymd = md ? md.replace(/\D/g,'') : (()=>{const t=new Date(); return t.getFullYear()+String(t.getMonth()+1).padStart(2,'0')+String(t.getDate()).padStart(2,'0');})();
       const hm = nowHHMM();
       const customer = sanitize(document.querySelector('.header-table tr:nth-child(1) td:nth-child(2)')?.textContent || 'no-customer');
       const zuban    = sanitize(document.querySelector('.header-table tr:nth-child(2) td:nth-child(6)')?.textContent || 'no-zuban');
@@ -523,7 +530,9 @@
       ];
       for(const r of ranges){
         const el=document.querySelector(`input[name="${r.name}"]`);
-        if(!el || !el.value) return null;               // belum lengkap
+        if(!el || !el.value) return null;               // belum lengkap → kosong
+        if(el.classList.contains('invalid')) return false; // ada out-of-range → 否
+
         const val=parseFloat(el.value);
         if(Number.isNaN(val)) return false;
         if(r.min!==undefined && val<r.min) return false;
@@ -566,7 +575,10 @@
     window.addEventListener('load', async ()=>{
       wireJudgeMirror(); wireDateMirror(); wireEnterNavigationAll(); wireSerialMirror();
       wireSoftRequired(); markSoftRequired();
-      setIssuedTodayIfEmpty(); wireHakkohidukeText();
+      setIssuedTodayIfEmpty();
+      // mirror tanggal teks
+      wireYMDText('hakkohiduke'); // 発行年月日
+      wireYMDText('makingdate');  // 製造日
       updateOverallJudgment();
 
       // Ambil digits dari server kalau ada
