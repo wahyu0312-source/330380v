@@ -123,7 +123,8 @@
           <td>TTS60-01-689</td>
           <td class="section-label">発行年月日</td>
           <td>
-            <input type="date" name="hakkohiduke" class="no-print soft-required" data-soft-required="1" />
+            <!-- Issued date: text YYYY/MM/DD -->
+            <input type="text" name="hakkohiduke" placeholder="YYYY/MM/DD" class="no-print soft-required" data-soft-required="1" />
             <span class="print-text" data-from="hakkohiduke"></span>
           </td>
         </tr>
@@ -259,6 +260,7 @@
 
     /* ==== STATE ==== */
     let PAD_DIGITS = 4; // bisa diubah via 「#️⃣ 桁数設定」
+    const LOCK_TTL_SEC = 120; let __lockId=null; let __lockTimer=null;
 
     /* ==== STAMP & CLEAR ==== */
     function updateStampPreview(id, src) { document.getElementById(id).src = src || ''; }
@@ -269,7 +271,8 @@
       form.querySelectorAll('.td-measure-grid input.invalid').forEach(el => el.classList.remove('invalid'));
       wireDateMirror(); wireEnterNavigationAll(); wireSerialMirror();
       wireSoftRequired(); markSoftRequired();
-      setTodayIfEmpty('hakkohiduke'); updateOverallJudgment();
+      setIssuedTodayIfEmpty(); updateOverallJudgment();
+      wireHakkohidukeText(); // mirror lagi setelah reset
     }
 
     /* ==== VALIDASI MEASURE ==== */
@@ -285,7 +288,7 @@
           if(v.includes('.')){ let[d='',f='']=v.split('.'); d=d.slice(0,MAX_INT_DIGITS);
             v = allowDec ? (f===''?`${d}.`:`${d}.${(f||'').replace(/\D/g,'').slice(0,1)}`) : d;
           } else v=v.slice(0,MAX_INT_DIGITS);
-          inp.value=v; inp.classList.remove('invalid');
+          inp.value=v; inp.classList.remove('invalid'); markSoftRequired();
         });
         inp.addEventListener('blur',()=>{
           let v = normalize(inp.value);
@@ -297,7 +300,6 @@
           inp.value = allowDec ? n.toFixed(1).replace(/\.0$/,'.0') : String(Math.trunc(n)).slice(0,MAX_INT_DIGITS);
           inp.classList.remove('invalid'); markSoftRequired();
         });
-        inp.addEventListener('input', markSoftRequired);
       });
     })();
 
@@ -316,7 +318,8 @@
     function wireDateMirror(){
       document.querySelectorAll('input[type="date"]').forEach(inp=>{
         const span=document.querySelector(`.print-text[data-from="${inp.name}"]`); if(!span) return;
-        const fmt=v=>v?v.replace(/(\d{4})-(\d{2})-(\d{2})/,'$1/$2/$3'):''; const upd=()=>span.textContent=fmt(inp.value);
+        const fmt=v=>v?v.replace(/(\d{4})-(\d{2})-(\d{2})/,'$1/$2/$3'):'';
+        const upd=()=>span.textContent=fmt(inp.value);
         inp.addEventListener('change',()=>{ upd(); markSoftRequired(); }); upd();
       });
     }
@@ -325,9 +328,44 @@
         if(!sel.nextElementSibling || !sel.nextElementSibling.classList.contains('print-text')){
           const span=document.createElement('span'); span.className='print-text'; sel.parentNode.insertBefore(span, sel.nextSibling);
         }
-        const span=sel.nextElementSibling; const upd=()=>{ span.textContent=sel.value; markSoftRequired(); updateOverallJudgment(); };
+        const span=sel.nextElementSibling;
+        const upd=()=>{ span.textContent=sel.value; markSoftRequired(); updateOverallJudgment(); };
         sel.addEventListener('change',upd); upd();
       });
+    }
+
+    /* ==== 発行年月日: text YYYY/MM/DD ==== */
+    function formatYMD(d){
+      const yyyy=d.getFullYear(), mm=String(d.getMonth()+1).padStart(2,'0'), dd=String(d.getDate()).padStart(2,'0');
+      return `${yyyy}/${mm}/${dd}`;
+    }
+    function validYMDText(s){
+      const m = /^\s*(\d{4})[\/\-\.](\d{1,2})[\/\-\.](\d{1,2})\s*$/.exec(s||'');
+      if(!m) return null;
+      const y=+m[1], mo=+m[2], d=+m[3];
+      if(mo<1||mo>12||d<1||d>31) return null;
+      return `${String(y).padStart(4,'0')}/${String(mo).padStart(2,'0')}/${String(d).padStart(2,'0')}`;
+    }
+    function wireHakkohidukeText(){
+      const inp=document.querySelector('input[name="hakkohiduke"]');
+      const span=document.querySelector('.print-text[data-from="hakkohiduke"]');
+      if(!inp) return;
+      const sync=()=>{ 
+        const norm=validYMDText(inp.value);
+        if(norm && inp.value!==norm) inp.value=norm;
+        if(span) span.textContent = inp.value || '';
+        markSoftRequired();
+      };
+      inp.addEventListener('blur', sync);
+      inp.addEventListener('input', ()=>{ if(span) span.textContent = inp.value; markSoftRequired(); });
+      sync();
+    }
+    function setIssuedTodayIfEmpty(){
+      const inp=document.querySelector('input[name="hakkohiduke"]');
+      if(!inp) return;
+      if(!inp.value){ inp.value = formatYMD(new Date()); }
+      const span=document.querySelector('.print-text[data-from="hakkohiduke"]');
+      if(span) span.textContent = inp.value;
     }
 
     /* ==== SOFT REQUIRED ==== */
@@ -382,7 +420,6 @@
     }
 
     /* ==== LOCK lintas perangkat ==== */
-    const LOCK_TTL_SEC = 120; let __lockId=null; let __lockTimer=null;
     function getClientId(){ const k='okuma:clientId'; let id=localStorage.getItem(k); if(!id){ id=crypto.randomUUID(); localStorage.setItem(k,id);} return id; }
     function showLockOverlay(show){ const ov=document.getElementById('lock-overlay'); if(ov){ ov.style.display = show? 'flex':'none'; } }
     function setEditingEnabled(enabled){ const disabled=!enabled; document.getElementById('inspection-form').querySelectorAll('input,select,textarea,button').forEach(el=>{ if(!el.closest('.toolbar')) el.disabled = disabled; }); }
@@ -427,7 +464,7 @@
       if(!dir.entries) return false;
       const pattern = new RegExp(`_${escapeRe(prefix)}0*${numeric}\\.pdf$`);
       for await (const [name] of dir.entries()){
-        if(/\\.pdf$/i.test(name) && pattern.test(name)) return name;
+        if(/\.pdf$/i.test(name) && pattern.test(name)) return name;
       }
       return false;
     }
@@ -450,28 +487,19 @@
         const suffixStr = (document.querySelector('input[name="serial_no_suffix"]').value||'').trim();
         const numeric   = parseInt(suffixStr.replace(/^0+/,'') || '0', 10);
         const dupe = await serialExists(dir, rawPrefix, numeric);
-        if(dupe){ alert(`同じ製造Noのファイルが既に存在します:\\n${dupe}\\n保存を中止しました。`); return; }
+        if(dupe){ alert(`同じ製造Noのファイルが既に存在します:\n${dupe}\n保存を中止しました。`); return; }
 
         const doc = await buildPdfDoc();
         const fh = await dir.getFileHandle(fileName, { create:true });
         const w  = await fh.createWritable();
         await w.write(doc.output('blob')); await w.close();
-        const t=new Date(); alert(`保存しました: ${fileName}\\n時刻: ${String(t.getHours()).padStart(2,'0')}:${String(t.getMinutes()).padStart(2,'0')}`);
+        const t=new Date(); alert(`保存しました: ${fileName}\n時刻: ${String(t.getHours()).padStart(2,'0')}:${String(t.getMinutes()).padStart(2,'0')}`);
       }catch(e){ console.error('Gagal tulis NAS; fallback ke Download.', e); const doc=await buildPdfDoc(); doc.save(fileName); }
     }
 
-    /* ==== Helpers ==== */
-    function setTodayIfEmpty(inputName){
-      const inp = document.querySelector(`input[name="${inputName}"]`);
-      if(!inp) return;
-      if(!inp.value){
-        const t=new Date(); const yyyy=t.getFullYear(); const mm=String(t.getMonth()+1).padStart(2,'0'); const dd=String(t.getDate()).padStart(2,'0');
-        inp.value = `${yyyy}-${mm}-${dd}`; inp.dispatchEvent(new Event('change',{bubbles:true}));
-      }
-    }
-
-    /* ==== 総合判定 otomatis: 1,2,4,5,6,7 => 合 ; 3 => 無 ==== */
+    /* ==== 総合判定: 判定 + 測定値 harus OK ==== */
     function isOverallPass(){
+      // 判定 pola: 1,2,4,5,6,7 = 合; 3 = 無
       const v1 = document.querySelector('select[name="judge1"]').value;
       const v2 = document.querySelector('select[name="judge2"]').value;
       const v3 = document.querySelector('select[name="judge3"]').value;
@@ -479,10 +507,39 @@
       const v5 = document.querySelector('select[name="judge5"]').value;
       const v6 = document.querySelector('select[name="judge6"]').value;
       const v7 = document.querySelector('select[name="judge7"]').value;
-      if(!v1||!v2||!v3||!v4||!v5||!v6||!v7) return false;
-      return (v1==='合')&&(v2==='合')&&(v3==='無')&&(v4==='合')&&(v5==='合')&&(v6==='合')&&(v7==='合');
+
+      if(!v1||!v2||!v3||!v4||!v5||!v6||!v7) return null; // belum lengkap
+      const okJudge = (v1==='合')&&(v2==='合')&&(v3==='無')&&(v4==='合')&&(v5==='合')&&(v6==='合')&&(v7==='合');
+      if(!okJudge) return false;
+
+      // Cek semua measurement sudah isi & dalam batas
+      const ranges = [
+        {name:"a_length",min:0,max:435},
+        {name:"b_length",min:2065},
+        {name:"c_length",min:1630},
+        {name:"start_resist",min:0,max:7},
+        {name:"mid_resist",min:0,max:7},
+        {name:"end_resist",min:0,max:7},
+      ];
+      for(const r of ranges){
+        const el=document.querySelector(`input[name="${r.name}"]`);
+        if(!el || !el.value) return null;               // belum lengkap
+        const val=parseFloat(el.value);
+        if(Number.isNaN(val)) return false;
+        if(r.min!==undefined && val<r.min) return false;
+        if(r.max!==undefined && val>r.max) return false;
+      }
+      return true;
     }
-    function updateOverallJudgment(){ const sel=document.querySelector('select[name="final_judgment"]'); const span=sel.nextElementSibling?.classList.contains('print-text')?sel.nextElementSibling:null; sel.value = isOverallPass() ? '合格' : '否'; if(span) span.textContent = sel.value; }
+    function updateOverallJudgment(){
+      const sel=document.querySelector('select[name="final_judgment"]');
+      const span=sel.nextElementSibling;
+      const res=isOverallPass();
+      if(res===true) sel.value='合格';
+      else if(res===false) sel.value='否';
+      else sel.value='';
+      if(span) span.textContent = sel.value;
+    }
 
     /* ==== UI: set next & digits ==== */
     async function configureNextSerial(){
@@ -509,11 +566,18 @@
     window.addEventListener('load', async ()=>{
       wireJudgeMirror(); wireDateMirror(); wireEnterNavigationAll(); wireSerialMirror();
       wireSoftRequired(); markSoftRequired();
-      setTodayIfEmpty('hakkohiduke'); updateOverallJudgment();
+      setIssuedTodayIfEmpty(); wireHakkohidukeText();
+      updateOverallJudgment();
 
       // Ambil digits dari server kalau ada
       try{ const info=await getInfoShared(serverPrefix()); if(typeof info?.digits==='number' && info.digits>=1) PAD_DIGITS=info.digits; }catch(e){}
       await ensureHasLockOrAcquire();
+
+      // Recompute 総合判定 saat input berubah
+      document.querySelectorAll('select.judge-select, .td-measure-grid input').forEach(el=>{
+        el.addEventListener('change', updateOverallJudgment);
+        el.addEventListener('input',  updateOverallJudgment);
+      });
     });
     window.addEventListener('beforeunload', releaseSharedLock);
   </script>
