@@ -24,6 +24,7 @@
     th, td { border:.3mm solid #333; padding:1.2mm 1mm; text-align:center; background:#fff; vertical-align:middle; }
     th { background:#fff; }
     .section-label { text-align:left; font-weight:bold; background:#fff; }
+
     .header-table td, .header-table th { white-space:nowrap; word-break:keep-all; }
     .header-table input { min-width:0; }
     .ta-left { text-align:left !important; }
@@ -198,12 +199,32 @@
     function updateStampPreview(id, src) { document.getElementById(id).src = src || ''; }
     function clearAllFields() {
       const form = document.getElementById('inspection-form');
+
+      // 1) Simpan 製造No (prefix & suffix) SEBELUM reset
+      const keepPrefix = getSerialPrefix();
+      const keepSuffixRaw = (document.querySelector('input[name="serial_no_suffix"]')?.value || '');
+      const keepSuffixNum = parseInt(keepSuffixRaw.replace(/[^\d]/g,''), 10);
+
+      // 2) Reset form
       form.reset();
       ['stamp1','stamp2'].forEach(id => document.getElementById(id).src = '');
       form.querySelectorAll('.td-measure-grid input.invalid').forEach(el => el.classList.remove('invalid'));
+
+      // 3) Re-wire (jangan panggil applyPrefix di sini)
       wireDateMirror(); wireEnterNavigationAll(); wireSerialMirror();
       wireSoftRequired(); markSoftRequired();
-      setTodayIfEmpty('hakkohiduke'); applyPrefix();
+      setTodayIfEmpty('hakkohiduke');
+
+      // 4) Pulihkan 製造No
+      const span = document.querySelector('.serial-prefix');
+      if (span && keepPrefix) span.textContent = keepPrefix;
+      if (Number.isFinite(keepSuffixNum)) setSerialSuffix(keepSuffixNum);
+
+      // 5) Sinkronkan tampilan cetak
+      const out = document.querySelector('[data-serial-print]');
+      if (out) out.textContent = getSerialFull();
+
+      // Penting: TIDAK memanggil applyPrefix() agar prefix tidak berubah saat clear
     }
 
     // numeric guards
@@ -416,7 +437,7 @@
       if(!dir?.entries) return false;
       const pattern = new RegExp(`_${prefix}0*${numeric}\\.pdf$`);
       for await (const [name] of dir.entries()){
-        if(/\.pdf$/i.test(name) && pattern.test(name)) return name;
+        if(/\\.pdf$/i.test(name) && pattern.test(name)) return name;
       }
       return false;
     }
