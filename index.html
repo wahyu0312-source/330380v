@@ -223,8 +223,6 @@
       // 5) Sinkronkan tampilan cetak
       const out = document.querySelector('[data-serial-print]');
       if (out) out.textContent = getSerialFull();
-
-      // Penting: TIDAK memanggil applyPrefix() agar prefix tidak berubah saat clear
     }
 
     // numeric guards
@@ -238,8 +236,7 @@
           let v = normalize(inp.value).replace(/[^\d.]/g,'');
           if((v.match(/\./g)||[]).length>1){ const [h,...r]=v.split('.'); v=h+'.'+r.join('').replace(/\D/g,''); }
           if(v.includes('.')){
-            let[d='',f='']=v.split('.');
-            d=d.slice(0,MAX_INT_DIGITS);
+            let[d='',f='']=v.split('.'); d=d.slice(0,MAX_INT_DIGITS);
             v = allowDec ? (f===''?`${d}.`:`${d}.${(f||'').replace(/\D/g,'').slice(0,1)}`) : d;
           } else v=v.slice(0,MAX_INT_DIGITS);
           inp.value=v; inp.classList.remove('invalid');
@@ -428,7 +425,8 @@
     }
 
     // SAVE to NAS (with folder picker & duplicate guard)
-    const DB_NAME='form-folder-db', STORE='folders'; let __db; const FOLDER_KEY='3303-MB80V-XL';
+    const DB_NAME='form-folder-db', STORE='folders'; let __db;
+    const FOLDER_KEY = `okuma:${APP_NS}:xl`; // ← alias stabil untuk MB-80V X-left
     function openDB(){ return new Promise((resolve,reject)=>{ const req=indexedDB.open(DB_NAME,1); req.onupgradeneeded=()=>req.result.createObjectStore(STORE); req.onsuccess=()=>{ __db=req.result; resolve(); }; req.onerror=()=>reject(req.error); });}
     async function openDBIfNeeded(){ if(!__db) await openDB(); }
     async function putHandle(key, handle){ await openDBIfNeeded(); return new Promise((res,rej)=>{ const tx=__db.transaction(STORE,'readwrite'); tx.objectStore(STORE).put(handle,key); tx.oncomplete=()=>res(); tx.onerror=()=>rej(tx.error); }); }
@@ -437,7 +435,7 @@
       if(!dir?.entries) return false;
       const pattern = new RegExp(`_${prefix}0*${numeric}\\.pdf$`);
       for await (const [name] of dir.entries()){
-        if(/\\.pdf$/i.test(name) && pattern.test(name)) return name;
+        if(/\.pdf$/i.test(name) && pattern.test(name)) return name; // ← diperbaiki regex literal
       }
       return false;
     }
@@ -550,4 +548,3 @@
   </script>
 </body>
 </html>
-
