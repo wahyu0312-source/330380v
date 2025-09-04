@@ -428,7 +428,7 @@
     }
 
     // SAVE to NAS (with folder picker & duplicate guard)
-    const DB_NAME='form-folder-db', STORE='folders'; let __db; const FOLDER_KEY='Okuma_MB80V_XL';
+    const DB_NAME='form-folder-db', STORE='folders'; let __db; const FOLDER_KEY='3303-MB80V-XL';
     function openDB(){ return new Promise((resolve,reject)=>{ const req=indexedDB.open(DB_NAME,1); req.onupgradeneeded=()=>req.result.createObjectStore(STORE); req.onsuccess=()=>{ __db=req.result; resolve(); }; req.onerror=()=>reject(req.error); });}
     async function openDBIfNeeded(){ if(!__db) await openDB(); }
     async function putHandle(key, handle){ await openDBIfNeeded(); return new Promise((res,rej)=>{ const tx=__db.transaction(STORE,'readwrite'); tx.objectStore(STORE).put(handle,key); tx.oncomplete=()=>res(); tx.onerror=()=>rej(tx.error); }); }
@@ -550,3 +550,4 @@
   </script>
 </body>
 </html>
+
