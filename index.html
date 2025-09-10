@@ -313,8 +313,8 @@
       inp?.addEventListener('input', upd); upd();
     }
     function computePrefixFromZuban(z){
-      const d = String(z||'').replace(/\D/g,'').slice(0,4); // 4 digits head
-      return d ? `XL${d}-` : 'XL-';
+      const d = String(z||'').replace(/\D/g,'').slice(0,6);
+  return d ? `${d}-` : '';
     }
     function applyPrefix(){
       const z = getZuban();
@@ -322,7 +322,7 @@
       const span = document.querySelector('.serial-prefix');
       if(span) span.textContent = pref;
     }
-    function prefixReady(){ return /^XL\d{4}-$/.test(getSerialPrefix()); }
+    function prefixReady(){ return /^\d{6}-$/.test(getSerialPrefix()); }
 
     // GAS API
     async function apiGAS(body){
@@ -338,8 +338,8 @@
 
     async function assignNextSerialSuffix(){
       if (!prefixReady()){
-        alert('図番の先頭4桁が必要です（例: 3303）。図番を確認してください。'); return;
-      }
+  alert('図番の先頭6桁が必要です（例: 330320）。図番を確認してください。'); return;
+}
       const prefix = serverPrefix();
       try{
         const nxt = await getNextSuffixShared(prefix);
